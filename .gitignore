@@ -1,0 +1,7 @@
+.*
+!/.gitignore
+/__pycache__
+/data
+/datasets
+*.csv
+/svd_map/__pycache__
