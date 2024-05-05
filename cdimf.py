@@ -1,10 +1,8 @@
 import numpy as np
-# import cupy as cp
 from tqdm import tqdm
 import scipy
 from scipy.linalg import sqrtm
-from evaluation import topn_recommendations, downvote_seen_items, downvote_negative_samples, model_evaluate
-from numba import jit, prange
+from utils.evaluation import topn_recommendations, model_evaluate
 from joblib import Parallel, delayed
 from time import time
 
@@ -17,12 +15,13 @@ def notqdm(it, *a, **k):
 # tqdm = nop
 
 class CDIMF:
-    def __init__(self, data, common_users=None, params={}, njobs=-1) -> None:
+    def __init__(self, data, common_users=None, params={}, njobs=-1, name=None) -> None:
         self.data = scipy.sparse.csr_matrix(data, dtype=np.float32)
         self.cdata = self.data.tocsc()
         assert len(data.shape) == 2
         self.nU, self.nI = self.data.shape
         self.njobs = njobs
+        self.name = name
 
         # Common users handleing: None->All, n:int->the first n users, iteratable->specific indices 
         if common_users is None:
@@ -204,72 +203,3 @@ class CDIMF:
                 delayed(rec_for_user) (userid, sampled_items) 
                 for userid, sampled_items in samples))
         return recs
-
-def run_cdimf_experiment(cdimfs, dss, n_epochs,
-                        topn=10, evaluate_every=0, aggregate_every=1, verbose=0, 
-                        inter_domain=False, sampling_method='per_user', 
-                        log_variables=False, seen_items_excluded=False):
-    metrics = []
-    var_log = []
-    for _ in range(len(cdimfs)):
-        metrics.append(dict())
-        var_log.append(dict())
-
-    # report initial metrics
-    if evaluate_every > 0:
-        start_time = time()
-        for i, node_ds in enumerate(zip(cdimfs, dss)):
-            node, ds = node_ds
-            recs = node.get_recommendations(ds.training, samples=ds.samples, topn=topn, 
-                                            seen_items_excluded=seen_items_excluded,
-                                            from_foreign_domain=cdimfs[1-i] if inter_domain else None)
-            metrics_ = model_evaluate(recs, ds.holdout, ds.description, sampling_method=sampling_method) 
-            metrics[i]['epochs'] = [0]
-            for name, value in metrics_.items():
-                metrics[i][name] = [value]
-            if verbose>0:
-                print(f'node {i+1} metrics : {metrics_}')
-        end_time = time()
-        if verbose>0: print('Evaluation time = ', end_time-start_time, 's')
-    if log_variables:
-        log_variables_(var_log, cdimfs) 
-        
-
-    for epoch in range(n_epochs):
-        start_time = time()
-        if verbose>0: print(f'Epoch {epoch+1}')
-        XU = []
-        # train locally
-        for node in cdimfs:
-            XU.append(node.train(iterations=1, verbose=verbose))
-        # aggregate
-        if epoch % aggregate_every == 0:
-            for i, node in enumerate(cdimfs):
-                if verbose>0:
-                    print(f'\rAggregate nodes {i+1}/{len(cdimfs)}', end='')
-                node.aggregate(XU)
-            if verbose>0: print()
-        end_time = time()
-        if verbose>0: print('Traing time = ', end_time-start_time, 's')
-        
-        # evaluate
-        if log_variables:
-            log_variables_(var_log, cdimfs)
-        if evaluate_every>0 and (epoch+1)%evaluate_every==0:
-            start_time = time()
-            for i, node_ds in enumerate(zip(cdimfs, dss)):
-                node, ds = node_ds
-                recs = node.get_recommendations(ds.training, samples=ds.samples, topn=topn, 
-                                                seen_items_excluded=seen_items_excluded,
-                                                from_foreign_domain=cdimfs[1-i] if inter_domain else None)
-                metrics_ = model_evaluate(recs, ds.holdout, ds.description, sampling_method=sampling_method) 
-                metrics[i]['epochs'].append(metrics[i]['epochs'][-1]+evaluate_every)
-                for name, value in metrics_.items():
-                    metrics[i][name].append(value)
-                if verbose>0:
-                    print(f'node {i+1} metrics : {metrics_}')
-            end_time = time()
-            if verbose>0: print('Evaluation time = ', end_time-start_time, 's')
-
-    return metrics, var_log
-

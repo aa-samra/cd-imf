@@ -2,6 +2,6 @@
 !/.gitignore
 /__pycache__
 /data
-/datasets
+# /datasets
 *.csv
-/svd_map/__pycache__
+/*/__pycache__

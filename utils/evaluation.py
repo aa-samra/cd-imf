@@ -69,7 +69,14 @@ def model_evaluate(recommended_items, holdout, holdout_description, topn=10, sam
     ndcg_pu = 1.0 / np.log2(hit_rank + 1)
     ndcg = np.sum(ndcg_pu) / n_test_users
 
-    return {f'HR@{topn}': hr, f'NDCG@{topn}':ndcg, f'MRR@{topn}':mrr, f'COV@{topn}':cov}
+    metrics = {
+        f'HR@{topn}': hr, 
+        f'NDCG@{topn}':ndcg, 
+        # f'MRR@{topn}':mrr, 
+        f'COV@{topn}':cov
+        }
+    
+    return metrics
 
 
 def calculate_rmse(scores, holdout, holdout_description):

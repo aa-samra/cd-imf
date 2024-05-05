@@ -2,12 +2,15 @@ import numpy as np
 from tqdm import tqdm
 
 class Dataset:
-    def __init__(self, training, holdout, description) -> None:
+    def __init__(self, training, test, description, name=None) -> None:
         self.training = training
-        self.holdout = holdout
+        self.test = test
         self.description = description
         self.samples = {}
-        self.test_users = self.holdout[self.description['users']].drop_duplicates().values
+        self.test_users = self.test[self.description['users']].drop_duplicates().values
+        self.sampling_method = 'per_item'
+        self.seen_items_excluded = False
+        self.name = name
 
     def generate_samples(self, 
                          negatives_per_item=999, 
@@ -20,8 +23,10 @@ class Dataset:
             item_catalog = self.description['n_items']
         elif item_catalog=='relative':
             item_catalog = self.training[self.description['items']].unique()
+        self.sampling_method = sampling_method
+        self.seen_items_excluded = exclude_seen_items
 
-        for userid, positive_items in tqdm(self.holdout.groupby('userid')['itemid'].agg(list).items()):
+        for userid, positive_items in tqdm(self.test.groupby('userid')['itemid'].agg(list).items()):
             if sampling_method=='per_user':
                 sample_size = min((negatives_per_item+1) * len(positive_items), item_catalog_size)
                 sampled_items = np.random.choice(item_catalog, size=sample_size ,replace=False)
