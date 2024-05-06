@@ -41,7 +41,7 @@ class CDIMF:
         # Initialization hyperparameters
         self.rank = params.get('rank', 50)
         self.std = params.get('std', 0.1)
-        
+        self.seed = params.get('seed', 15)
         # ALS hyperparameters
         self.implicit = params.get('implicit', True)
         self.reg_als = params.get('reg_als', 0.1)
@@ -53,6 +53,7 @@ class CDIMF:
         self.rho = params.get('rho', 1)  # control cross-domain sharing (set to 0 for local ALS, other for standard ADMM)
         self.prox = params.get('prox', lambda x:x) # identity prox
 
+        np.random.seed(self.seed)
         self.X = np.float32(self.std * np.random.randn(self.nU, self.rank) / np.sqrt(self.rank))
         self.Y = np.float32(self.std * np.random.randn(self.nI, self.rank) / np.sqrt(self.rank))
 
@@ -176,7 +177,7 @@ class CDIMF:
         if self.prox is None:
             self.Z = mean_xu
         if self.prox == 'L2':
-            self.Z = N_sides * self.rho * mean_xu / (N_sides * self.rho + self.reg_z) 
+            self.Z = N_sides * self.rho * mean_xu / (N_sides * self.rho + self.reg_z + 1e-15) 
         if self.prox == 'ortho':
             self.Z = mean_xu @ sqrtm(mean_xu.T @ mean_xu)
 

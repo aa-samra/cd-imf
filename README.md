@@ -18,13 +18,13 @@ The available arguments are:
 
 These parameters are optional. If not specified, the default values for the corresponding experiment will be used: 
 * `--num_epoch`: Specifies the number of epochs.
-* `--prox`: Specifies the proximal operator for factors' aggregation.
-* `--reg_z`: Specifies the L2 weight for the proximal operator.
+* `--rank`: Specifies the latent dimension.
 * `--reg_als`: Specifies the regularization for the ALS solver.
 * `--unobserved_weight`: Specifies the unobserved weight.
-* `--rho`: Specifies the cross-domain sharing parameter.
 * `--v`: Specifies the frequency-scaled regularization parameter.
-* `--rank`: Specifies the latent dimension.
+* `--rho`: Specifies the cross-domain sharing parameter.
+* `--prox`: Specifies the proximal operator for factors' aggregation, either "L2" or "identity". 
+* `--reg_z`: Specifies the L2 regularization parameter if the proximal operator is "L2".
 * `--seed`: Specifies the manual seed initialization.
 
 ## Requirements

@@ -73,7 +73,7 @@ def run_cdimf_experiment(nodes,
         for node in nodes:
             XU.append(node.train(iterations=1, verbose=verbose))
         # aggregate
-        if epoch % aggregate_every == 0:
+        if epoch % aggregate_every == 0 and len(nodes)>1:
             for i, node in enumerate(nodes):
                 if verbose>0:
                     print(f'\rAggregate nodes {i+1}/{len(nodes)}', end='')
@@ -230,7 +230,6 @@ if __name__=="__main__":
         nodes = [CDIMF(data=mtx, common_users=data_description['n_users'], params=params)]
 
     
-    np.random.seed(opt['seed'])
     metrics = run_cdimf_experiment(nodes=nodes,
                                    datasets=[ds1, ds2],
                                    n_epochs=params['num_epoch'],
