@@ -29,12 +29,15 @@ def create_arg_parser():
     parser.add_argument('--v', type=float, help='frequency-scaled regularization parameter')
     parser.add_argument('--rank', type=int, help='latent dimension')
 
-    # others
+    # EXPERIMENT Arguments
     parser.add_argument('--seed', type=int, default=15, help='manual seed init')
+    parser.add_argument('--evaluate_every', type=int, default=1, help='set evaluation frequency')
+    parser.add_argument('--aggregate_every', type=int, default=1, help='set shared parameters aggregation frequency')
+    parser.add_argument('--verbose', type=int, default=1, help='set output verbosity, 0-silent, 1-meduim, 2-verbose')
 
     return parser
    
-def run_cdimf_experiment(nodes, 
+def simulate_cdimf_nodes(nodes, 
                          datasets, 
                          n_epochs=1,
                          evaluate_every=0,
@@ -120,11 +123,8 @@ def load_params(opt, params_file):
     print(params)
     return params
 
-if __name__=="__main__":
-    parser = create_arg_parser()
-    args = parser.parse_args()
-    opt = vars(args)
 
+def run_cdimf_experiment(opt):
     domains = opt['domains']
     task = opt['task']
     N1, N2 = domains.split('_')
@@ -209,7 +209,6 @@ if __name__=="__main__":
         common_users_2 = domain2_index['users'].get_indexer(shared_users)
 
     # build datasets and generate samples
-
     print('generate test samples ...')
     ds1 = Dataset(training=training1, test=test1, description=data_description1, name=N1)
     ds2 = Dataset(training=training2, test=test2, description=data_description2, name=N2)
@@ -219,7 +218,6 @@ if __name__=="__main__":
                             exclude_seen_items=False, 
                             item_catalog='relative')
         
-
     params = load_params(opt, params_file='default_params.csv')
 
     if opt['model'] != 'ALS_joined':
@@ -229,28 +227,19 @@ if __name__=="__main__":
     else:
         nodes = [CDIMF(data=mtx, common_users=data_description['n_users'], params=params)]
 
-    
-    metrics = run_cdimf_experiment(nodes=nodes,
+    metrics = simulate_cdimf_nodes(nodes=nodes,
                                    datasets=[ds1, ds2],
                                    n_epochs=params['num_epoch'],
-                                   evaluate_every=1,
-                                   aggregate_every=1,
-                                   verbose=1,
-                                   inter_domain=(params['task']=='cold-start' and params['model']!='ALS_joined'))
+                                   evaluate_every=opt.get('evaluate_every', 1),
+                                   aggregate_every=opt.get('aggregate_every', 1),
+                                   verbose=opt.get('verbose', 1),
+                                   inter_domain=(params['task']=='cold-start' and params['model']!='ALS_joined'))   
+    return metrics
 
+if __name__=="__main__":
+    parser = create_arg_parser()
+    args = parser.parse_args()
+    opt = vars(args)
 
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
+    run_cdimf_experiment(opt)
         
