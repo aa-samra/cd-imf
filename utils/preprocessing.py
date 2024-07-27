@@ -30,8 +30,8 @@ def pq_core_filter(data, data_description, min_activity=1, min_popularity=1, sin
         dense_data = dense_data.query(f'{itemid} in @popular_items')
         
         n += 1
-        a = dense_data.groupby('userid').size().min()
-        b = dense_data.groupby('itemid').size().min()
+        a = dense_data.groupby(userid).size().min()
+        b = dense_data.groupby(itemid).size().min()
         nU, nI = dense_data[userid].nunique(), dense_data[itemid].nunique()
         d = len(dense_data) / (nU*nI)  
         print(n, len(dense_data), nU, nI, a, b, d, sep='\t\t')
